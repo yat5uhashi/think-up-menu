@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Django
+db.sqlite3
+staticfiles/
+media/
+
+# 環境変数（秘密情報。コミットしない）
+.env
+
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
