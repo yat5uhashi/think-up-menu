@@ -1,6 +1,6 @@
-# Project
+# think-up-menu（献立提案アプリ）
 
-Python 3.13 + Django 5.2 (LTS) + PostgreSQL。Python は **uv** でプロジェクトごとにバージョン管理しています。
+献立提案アプリのバックエンド。Python 3.13 + Django 5.2 (LTS) + PostgreSQL。Python は **uv** でプロジェクトごとにバージョン管理しています。
 
 ## 構成
 
