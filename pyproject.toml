@@ -1,9 +1,32 @@
 [project]
-name = "config"
+name = "think-up-menu"
 version = "0.1.0"
+description = "献立提案アプリのバックエンド (Django + DRF)"
 requires-python = ">=3.13"
 dependencies = [
     "django>=5.2,<5.3",
+    "djangorestframework>=3.17.1",
     "gunicorn>=26.0.0",
     "psycopg[binary]>=3.3.4",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.17",
+]
+
+[tool.ruff]
+# 1行の最大長。Django/DRF はやや長めが扱いやすい
+line-length = 100
+target-version = "py313"
+# 自動生成・マイグレーションは対象外
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+# E/W: pycodestyle, F: Pyflakes, I: isort(import順), UP: pyupgrade,
+# B: bugbear(バグになりがちな書き方), DJ: flake8-django
+select = ["E", "W", "F", "I", "UP", "B", "DJ"]
+
+[tool.ruff.format]
+# 文字列はダブルクォートに統一
+quote-style = "double"
