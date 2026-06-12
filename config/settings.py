@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -51,7 +52,9 @@ INSTALLED_APPS = [
 # Django REST Framework
 # https://www.django-rest-framework.org/api-guide/settings/
 REST_FRAMEWORK = {
+    # 認証は JWT が主。Session は admin / ブラウザブルAPI 用に併用
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
@@ -59,8 +62,19 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    # URL パスでバージョニング（/api/v1/...）
+    "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
+    "DEFAULT_VERSION": "v1",
+    "ALLOWED_VERSIONS": ["v1"],
     # エラーレスポンスを統一フォーマットに変換する（core/exception_handlers.py）
     "EXCEPTION_HANDLER": "core.exception_handlers.custom_exception_handler",
+}
+
+# Simple JWT
+# https://django-rest-framework-simplejwt.readthedocs.io/
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
 }
 
 MIDDLEWARE = [

@@ -6,12 +6,15 @@ requires-python = ">=3.13"
 dependencies = [
     "django>=5.2,<5.3",
     "djangorestframework>=3.17.1",
+    "djangorestframework-simplejwt>=5.5.1",
     "gunicorn>=26.0.0",
     "psycopg[binary]>=3.3.4",
 ]
 
 [dependency-groups]
 dev = [
+    "pytest>=9.0.3",
+    "pytest-django>=4.12.0",
     "ruff>=0.15.17",
 ]
 
@@ -30,3 +33,10 @@ select = ["E", "W", "F", "I", "UP", "B", "DJ"]
 [tool.ruff.format]
 # 文字列はダブルクォートに統一
 quote-style = "double"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+# テストとして集めるファイル名
+python_files = ["test_*.py"]
+# 2回目以降はテストDBを再利用して高速化
+addopts = "--reuse-db"

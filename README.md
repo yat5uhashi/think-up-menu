@@ -19,12 +19,17 @@
 - **ログ設計**：[docs/logging.md](docs/logging.md) — stdout 出力・dev=text/prod=json
 - **エラー設計**：[docs/error-handling.md](docs/error-handling.md) — ドメイン例外・統一エラーレスポンス
 - **ディレクトリ設計**：[docs/directory.md](docs/directory.md) — 役割分担とアプリ分割方針
+- **認証設計**：[docs/authentication.md](docs/authentication.md) — JWT（simplejwt）
+- **API規約**：[docs/api-conventions.md](docs/api-conventions.md) — URL設計・バージョニング（/api/v1/）
+- **テスト方針**：[docs/testing.md](docs/testing.md) — pytest
+- **CI**：[docs/ci.md](docs/ci.md) — GitHub Actions（テスト+Lint。デプロイは後日）
 
 要点だけ:
 - ビジネスロジックは View ではなく `services.py`（書き込み）/ `selectors.py`（読み取り）に置く。
 - 例外はドメイン例外（`core/exceptions.py`）を投げ、View では捕まえない（変換は `core` の例外ハンドラに集約）。
 - ログは `logging.getLogger(__name__)` を使い `print()` は使わない。秘密情報は出さない。
-- コミット前に `uv run ruff format .` と `uv run ruff check --fix .` を実行する。
+- 認証は JWT（`Authorization: Bearer <token>`）。API は `/api/v1/` 配下。
+- push 前に `uv run ruff format .` → `uv run ruff check --fix .` → `uv run pytest`。
 - シークレットは `.env` 経由（コミットしない）。
 
 ### ディレクトリ構成（概要）
