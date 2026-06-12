@@ -3,7 +3,7 @@
 ## 方針
 
 - **CI はテストと静的チェックのみ**。デプロイ（CD）はインフラ整備後に別途追加する。
-- GitHub Actions を使用（[.github/workflows/ci.yml](../.github/workflows/ci.yml)）。
+- GitHub Actions を使用（[.github/workflows/test.yml](../.github/workflows/test.yml)、ワークフロー名 `Lint & Test`）。
 
 ## トリガー
 
