@@ -1,6 +1,5 @@
 """app のルーティング。config/urls.py から include される。"""
 
-
 app_name = "app"
 
 urlpatterns = [

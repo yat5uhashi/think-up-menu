@@ -16,28 +16,30 @@
 
 - **設計方針**：[docs/architecture.md](docs/architecture.md) — REST API + サービス層パターン
 - **コーディング規約**：[docs/coding-style.md](docs/coding-style.md) — PEP8 / ruff / 命名 / コミット規約
+- **ログ設計**：[docs/logging.md](docs/logging.md) — stdout 出力・dev=text/prod=json
+- **エラー設計**：[docs/error-handling.md](docs/error-handling.md) — ドメイン例外・統一エラーレスポンス
+- **ディレクトリ設計**：[docs/directory.md](docs/directory.md) — 役割分担とアプリ分割方針
 
 要点だけ:
 - ビジネスロジックは View ではなく `services.py`（書き込み）/ `selectors.py`（読み取り）に置く。
+- 例外はドメイン例外（`core/exceptions.py`）を投げ、View では捕まえない（変換は `core` の例外ハンドラに集約）。
+- ログは `logging.getLogger(__name__)` を使い `print()` は使わない。秘密情報は出さない。
 - コミット前に `uv run ruff format .` と `uv run ruff check --fix .` を実行する。
 - シークレットは `.env` 経由（コミットしない）。
 
-### ディレクトリ構成
+### ディレクトリ構成（概要）
 
 ```
 think-up-menu/
 ├── config/          # プロジェクト設定（settings, urls, wsgi）
-├── app/             # アプリ本体
-│   ├── models.py        # ORM モデル
-│   ├── serializers.py   # DRF シリアライザ（入出力）
-│   ├── services.py      # 書き込み系ロジック
-│   ├── selectors.py     # 読み取り系クエリ
-│   ├── views.py         # DRF ビュー（薄く保つ）
-│   └── urls.py          # ルーティング
+├── core/            # 共通コード（例外・例外ハンドラ・ログ）。モデルは持たない
+├── app/             # 機能アプリ（models/serializers/services/selectors/views/urls）
 ├── docs/            # 設計・規約ドキュメント
 ├── Dockerfile / docker-compose.yml
 └── pyproject.toml   # 依存・ruff 設定
 ```
+
+詳細なディレクトリ設計は [docs/directory.md](docs/directory.md) を参照。
 
 ## ローカル開発（uv のみ・SQLite）
 

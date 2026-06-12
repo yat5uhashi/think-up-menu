@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     # サードパーティ
     "rest_framework",
     # 自作アプリ
+    "core",
     "app",
 ]
 
@@ -58,6 +59,8 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    # エラーレスポンスを統一フォーマットに変換する（core/exception_handlers.py）
+    "EXCEPTION_HANDLER": "core.exception_handlers.custom_exception_handler",
 }
 
 MIDDLEWARE = [
@@ -156,3 +159,54 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+# Logging
+# https://docs.djangoproject.com/en/5.2/topics/logging/
+# 形式は DJANGO_LOG_FORMAT で切替（dev=text / prod=json）。
+# 出力は常に stdout（コンテナ運用の定石。ファイルには書かない）。
+LOG_LEVEL = os.environ.get("DJANGO_LOG_LEVEL", "INFO").upper()
+LOG_FORMAT = os.environ.get("DJANGO_LOG_FORMAT", "text").lower()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "text": {
+            "format": "[{asctime}] {levelname} {name}: {message}",
+            "style": "{",
+        },
+        "json": {
+            "()": "core.logging.JSONFormatter",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "json" if LOG_FORMAT == "json" else "text",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": LOG_LEVEL,
+    },
+    "loggers": {
+        # Django 本体のログ
+        "django": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        # 自作アプリのログ（services / selectors などはこの配下）
+        "app": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+        "core": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+            "propagate": False,
+        },
+    },
+}
