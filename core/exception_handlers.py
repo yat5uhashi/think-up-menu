@@ -49,15 +49,21 @@ def custom_exception_handler(exc, context):
     # 2) DRF 標準例外（ValidationError / NotFound / NotAuthenticated 等）
     response = drf_exception_handler(exc, context)
     if response is not None:
-        code = getattr(exc, "default_code", "error")
+        data = response.data if isinstance(response.data, dict) else {}
         if isinstance(exc, drf_exceptions.ValidationError):
-            # フィールド別エラーは details に格納する
+            # 入力検証エラーは一律 validation_error。フィールド別エラーは details に。
+            code = "validation_error"
             message = "入力内容が正しくありません。"
-            details = (
-                response.data if isinstance(response.data, dict) else {"errors": response.data}
-            )
+            details = data if data else {"errors": response.data}
         else:
-            detail = response.data.get("detail") if isinstance(response.data, dict) else None
+            # code は「レスポンスの code → detail の code → 例外既定」の順で採用する。
+            # simplejwt 等が返す no_active_account / token_not_valid を拾える。
+            detail = data.get("detail")
+            code = (
+                data.get("code")
+                or getattr(detail, "code", None)
+                or getattr(exc, "default_code", "error")
+            )
             message = str(detail) if detail else "エラーが発生しました。"
             details = None
         response.data = _error_body(code=code, message=message, details=details)
