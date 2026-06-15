@@ -84,6 +84,20 @@ def list_recipes(*, keyword: str | None = None) -> QuerySet[Recipe]:
 - **シークレットはコードに書かない**。`os.environ` 経由（`.env`）で読む。`.env` はコミットしない。
 - ビューは原則 **DRF の `APIView` / `ViewSet`** を使い、素の Django View は使わない。
 
+### マイグレーション命名規約
+
+- **初回は `0001_initial` のまま**にする（標準名。リネームしない）。
+- **2回目以降は `--name` で「変更内容」を表す名前**を付ける。日付だけの自動名（`0002_auto_...`）を避ける。
+  - 命名は `動詞_対象`（英小文字・スネークケース）。アプリ名は付けない（ディレクトリで分かるため冗長）。
+
+  ```powershell
+  uv run python manage.py makemigrations accounts --name add_user_display_name
+  # => accounts/migrations/0002_add_user_display_name.py
+  ```
+
+- **適用済みのマイグレーションはリネームしない**。名前は識別子であり、`django_migrations` テーブル・他マイグレーションの `dependencies`・共有/本番DBが依存するため、変更すると不整合になる。
+- 1つの意味ある変更 = 1マイグレーション。生成物は必ず内容をレビューしてコミットする。
+
 ## Git コミット規約
 
 - **1コミット1論点**。意味のある単位で小さくコミットする。
