@@ -8,6 +8,8 @@ from .models import User
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
+    """email ベースのカスタムユーザー用の管理画面設定。"""
+
     ordering = ["email"]
     list_display = ["email", "display_name", "is_staff", "is_active"]
     search_fields = ["email", "display_name"]
