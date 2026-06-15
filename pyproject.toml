@@ -27,8 +27,27 @@ extend-exclude = ["*/migrations/*"]
 
 [tool.ruff.lint]
 # E/W: pycodestyle, F: Pyflakes, I: isort(import順), UP: pyupgrade,
-# B: bugbear(バグになりがちな書き方), DJ: flake8-django
-select = ["E", "W", "F", "I", "UP", "B", "DJ"]
+# B: bugbear(バグになりがちな書き方), DJ: flake8-django, D: pydocstyle(docstring)
+select = ["E", "W", "F", "I", "UP", "B", "DJ", "D"]
+# docstring 強制はバランス型: モジュール/クラス/関数には必須。ただし下記は緩める。
+#   D102 メソッド全部（フレームワークのオーバーライド等でノイズになりやすい）
+#   D104 パッケージ __init__ / D105 マジックメソッド / D107 __init__
+#   D106 ネストクラス（Django の Meta など）
+#   D203/D212 等は google convention 側で自動調整
+#   D400/D415 末尾ピリオド・D401 命令形（英語前提のため日本語 docstring と相性が悪い）
+ignore = ["D102", "D104", "D105", "D106", "D107", "D400", "D401", "D415"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# テスト・エントリポイントは docstring 必須から除外
+"**/tests/**" = ["D"]
+"**/test_*.py" = ["D"]
+"manage.py" = ["D"]
+# Django 生成の AppConfig / 設定モジュールは docstring を強制しない
+"**/apps.py" = ["D100", "D101"]
+"config/settings.py" = ["D100"]
 
 [tool.ruff.format]
 # 文字列はダブルクォートに統一
