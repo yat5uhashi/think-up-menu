@@ -34,7 +34,6 @@ def _error_body(*, code: str, message: str, details: dict | None = None) -> dict
 
 def custom_exception_handler(exc, context):
     """DRF が捕捉した例外を統一フォーマットの Response に変換する。"""
-
     # 1) 自作のドメイン例外
     if isinstance(exc, ApplicationError):
         if exc.status_code >= 500:

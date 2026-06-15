@@ -44,7 +44,37 @@ def list_recipes(*, user: User, keyword: str | None = None) -> QuerySet[Recipe]:
 
 ## docstring / コメント
 
-- service / selector の各関数には**1行の docstring**で「何をするか」を書く。
+**様式は Google スタイル・日本語**。ruff の pydocstyle（`D` ルール, `convention = "google"`）で自動チェックする（設定は [pyproject.toml](../pyproject.toml)）。
+
+### 必須範囲（バランス型）
+
+| 対象 | docstring |
+|---|---|
+| 公開モジュール | 必須（意味のあるモジュール。空スタブも1行で可） |
+| 公開クラス | 必須 |
+| 公開関数（services/selectors 等） | **必須**（最重要） |
+| メソッド（View の post 等のオーバーライド） | 任意（クラスの docstring で説明できれば省略可） |
+| マジックメソッド / `__init__` / Django の `Meta`・`AppConfig` | 任意 |
+| テスト・`manage.py` | 不要（チェック対象外） |
+
+### 書き方
+
+- **1行要約**から書く。引数・戻り値・例外が自明でなければ `Args:` / `Returns:` / `Raises:` を足す。
+
+```python
+def list_recipes(*, keyword: str | None = None) -> QuerySet[Recipe]:
+    """レシピ一覧を返す。
+
+    Args:
+        keyword: 指定時は名前で部分一致絞り込み。
+
+    Returns:
+        条件に合致するレシピの QuerySet。
+    """
+    ...
+```
+
+- 末尾の句点（。）有無やピリオド要否は強制しない（日本語前提のため `D400/D401/D415` は無効）。
 - コメントは「なぜそうするか（why）」を書く。「何をしているか（what）」はコードで表現する。
 
 ## Django / DRF の約束
