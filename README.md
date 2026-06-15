@@ -23,6 +23,7 @@
 - **API規約**：[docs/api-conventions.md](docs/api-conventions.md) — URL設計・バージョニング（/api/v1/）
 - **テスト方針**：[docs/testing.md](docs/testing.md) — pytest
 - **CI**：[docs/ci.md](docs/ci.md) — GitHub Actions（テスト+Lint。デプロイは後日）
+- **ブランチ運用**：[docs/branching.md](docs/branching.md) — main + feature/fix・PR運用
 
 要点だけ:
 - ビジネスロジックは View ではなく `services.py`（書き込み）/ `selectors.py`（読み取り）に置く。
@@ -30,6 +31,7 @@
 - ログは `logging.getLogger(__name__)` を使い `print()` は使わない。秘密情報は出さない。
 - 認証は JWT（`Authorization: Bearer <token>`）。API は `/api/v1/` 配下。
 - push 前に `uv run ruff format .` → `uv run ruff check --fix .` → `uv run pytest`。
+- `main` に直接 push しない。`feature/` か `fix/` ブランチ → PR 経由。
 - シークレットは `.env` 経由（コミットしない）。
 
 ### ディレクトリ構成（概要）

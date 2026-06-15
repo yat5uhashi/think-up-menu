@@ -70,4 +70,4 @@ def list_recipes(*, user: User, keyword: str | None = None) -> QuerySet[Recipe]:
 
   例：`feat: 献立提案APIを追加`
 
-- **`main` に直接 push は最小限**にし、機能ごとにブランチを切ることを推奨（例：`feature/menu-suggest`）。
+- **`main` に直接 push しない**。`feature/` または `fix/` ブランチ → Pull Request 経由で入れる。詳細は [branching.md](branching.md)。
