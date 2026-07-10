@@ -63,9 +63,7 @@ think-up-menu/
 
 ## DB は全環境で PostgreSQL（dev/prod parity）
 
-ローカル・テスト・CI・本番の**すべてで PostgreSQL** を使います。SQLite は使いません。
-
-> **なぜか**：SQLite は `varchar(50)` の最大長を検証しない等、PostgreSQL と挙動が異なります。環境が違うと「ローカルのテストは通るのに CI/本番で落ちる」バグが起きるため、環境を揃えています。
+ローカル・テスト・CI・本番の**すべてで PostgreSQL** を使います。
 
 ## ローカル開発（ホストで実行 + DB はコンテナ）
 
