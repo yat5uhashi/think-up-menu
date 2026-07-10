@@ -32,14 +32,7 @@ class UserManager(BaseUserManager):
             raise ValueError("email は必須です。")
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
-        # full_clean は password が空だと blank=False で落ちるので、先にハッシュ化する
         user.set_password(password)
-        # Django は save() 時にモデルの検証を行わないため、ここで明示的に呼ぶ。
-        # これはクライアント入力の検証ではなく「モデルの不変条件のアサーション」。
-        # View 層(シリアライザ)で検証済みが前提であり、ここで落ちるのはサーバー側の
-        # 不具合なので、ValidationError は握りつぶさず 500 として検知させる。
-        # 一意性は DB の unique 制約が保証する（事前 SELECT は TOCTOU で無意味なため省く）。
-        user.full_clean(validate_unique=False)
         user.save(using=self._db)
         return user
 
@@ -73,6 +66,17 @@ class User(AbstractUser):
     REQUIRED_FIELDS = ["display_name"]  # createsuperuser で email/password 以外に要求
 
     objects = UserManager()
+
+    class Meta(AbstractUser.Meta):
+        constraints = [
+            # blank=False はフォーム/シリアライザ層の制約でしかなく、ORM から直接
+            # save() すると空文字が保存できてしまう。DB の CHECK 制約で禁止することで、
+            # 生SQL や bulk_create を含む全経路で不変条件を保証する。
+            models.CheckConstraint(
+                condition=~models.Q(display_name=""),
+                name="accounts_user_display_name_not_empty",
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.email

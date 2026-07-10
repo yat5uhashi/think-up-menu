@@ -58,26 +58,39 @@ def get_recipe(*, recipe_id: int) -> Recipe:
 2. **DRF 標準例外**（`ValidationError`, `NotFound`, `NotAuthenticated` 等） → DRF 既定処理の結果を統一フォーマットに詰め替え。バリデーションエラーは `details` にフィールド別エラーを入れる。
 3. **想定外の例外（500 相当）** → `logger.exception` で記録し、Django 既定の 500 ハンドリングに委ねる（`DEBUG=False` では中身を漏らさない）。
 
-## 「ValidationError」は3種類ある（混同注意）
+## 検証はどの層で行うか
 
-| クラス | どこで発生 | 扱い |
+| 層 | 役割 | 違反したときの応答 |
 |---|---|---|
-| `rest_framework.serializers.ValidationError` | シリアライザ（クライアント入力の検証） | **400** `validation_error` |
-| `core.exceptions.ValidationError` | サービス層（業務ルール違反） | **400** `validation_error` |
-| `django.core.exceptions.ValidationError` | モデルの `full_clean()` | **500**（下記） |
+| **シリアライザ（View 層）** | **クライアント入力の検証**。必須・形式・最大長・業務ルール | **400** `validation_error` |
+| サービス層 | 業務ルール違反（ドメイン例外） | **400**（`core.exceptions` のステータス） |
+| **DB 制約** | **不変条件**（`unique` / `NOT NULL` / `CheckConstraint` / `varchar(n)`） | **500**（下記） |
 
-### モデル由来の ValidationError を 400 に変換しない理由
+**モデル層では `full_clean()` を呼ばない**。Django の設計思想どおり「モデルは DB への薄いマッピング、検証はシリアライザ層」を守る（Django 本体の `UserManager` も `full_clean()` を呼ばない）。
 
-`Model.full_clean()` は「**モデルの不変条件のアサーション**」として使う（例：`UserManager._create_user`）。
-Django は `save()` 時にモデル検証を行わないため、ORM を直接呼ぶ経路（スクリプト・管理コマンド・テスト）を守る目的で明示的に呼んでいる。
+### DB 制約違反を 400 に変換しない理由
 
-クライアント入力の検証は **View 層（シリアライザ）が済ませている前提**なので、そこをすり抜けて `full_clean()` が落ちるということは、**検証層とモデル定義が食い違っている＝サーバー側の不具合**を意味する。
+クライアント入力の検証は **シリアライザが済ませている前提**なので、そこをすり抜けて DB 制約に到達するということは、**検証層とモデル定義が食い違っている＝サーバー側の不具合**を意味する。
 
 これを 400 に変換すると、**サーバーのバグをクライアントのせいにして隠蔽**してしまう。したがって:
 
-- **マッピングしない**。`django.core.exceptions.ValidationError` は「想定外の例外」として扱う。
+- `IntegrityError` / `DataError` は**マッピングしない**。「想定外の例外」として扱う。
 - 例外ハンドラの分岐3が `logger.exception` で記録し、**500** を返す（`DEBUG=False` では中身を漏らさない）。
 - 4xx はクライアントの誤り、5xx はサーバーの誤り、という区別を守る。
+
+### 不変条件は DB 制約で守る
+
+`blank=False` はフォーム/シリアライザ層の制約にすぎず、ORM から直接 `save()` すると空文字が保存できてしまう。**本当に守りたい不変条件は DB 制約にする**。
+
+```python
+class Meta(AbstractUser.Meta):
+    constraints = [
+        models.CheckConstraint(
+            condition=~models.Q(display_name=""),
+            name="accounts_user_display_name_not_empty",
+        ),
+    ]
+```
 
 ## 原則
 

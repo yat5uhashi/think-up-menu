@@ -78,6 +78,31 @@ def test_register_weak_password_is_rejected(api_client):
     assert "password" in res.data["error"]["details"]
 
 
+@pytest.mark.django_db
+def test_register_invalid_email_format_is_rejected(api_client):
+    res = api_client.post(
+        REGISTER_URL,
+        {"email": "not-an-email", "password": TEST_PASSWORD, "display_name": "x"},
+        format="json",
+    )
+    assert res.status_code == 400
+    assert res.data["error"]["code"] == "validation_error"
+    assert "email" in res.data["error"]["details"]
+
+
+@pytest.mark.django_db
+def test_register_too_long_display_name_is_rejected(api_client):
+    """max_length=50 はシリアライザが弾き、DB まで到達させない。"""
+    res = api_client.post(
+        REGISTER_URL,
+        {"email": "long@example.com", "password": TEST_PASSWORD, "display_name": "X" * 51},
+        format="json",
+    )
+    assert res.status_code == 400
+    assert res.data["error"]["code"] == "validation_error"
+    assert "display_name" in res.data["error"]["details"]
+
+
 # --- email の正規化（大文字小文字を同一視） -------------------------------
 
 
