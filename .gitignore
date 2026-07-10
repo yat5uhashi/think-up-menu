@@ -3,8 +3,7 @@ __pycache__/
 *.py[cod]
 .venv/
 
-# Django
-db.sqlite3
+# Django（DB は PostgreSQL のみ。SQLite は使わない）
 staticfiles/
 media/
 

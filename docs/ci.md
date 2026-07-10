@@ -22,6 +22,8 @@
 - テスト用に **PostgreSQL 17 のサービスコンテナ**を起動し、`DB_HOST=localhost` で接続。
 - 秘密値はダミー（`DJANGO_SECRET_KEY: ci-test-secret-key`）。本番のシークレットは使わない。
 
+> **dev/prod parity**：ローカル・CI・本番のすべてで PostgreSQL を使う。ローカルだけ SQLite にすると、`varchar` の最大長検証など挙動差により「ローカルは通るが CI で落ちる」バグが起きるため。詳細は [testing.md](testing.md)。
+
 ## ローカルで同じチェックを通すには
 
 push 前に以下を実行しておくと CI で落ちにくい：

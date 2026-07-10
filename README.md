@@ -61,14 +61,23 @@ think-up-menu/
 
 詳細なディレクトリ設計は [docs/directory.md](docs/directory.md) を参照。
 
-## ローカル開発（uv のみ・SQLite）
+## DB は全環境で PostgreSQL（dev/prod parity）
 
-DB サーバ不要で素早く動かす場合。`DB_HOST` が未設定だと自動で SQLite になります。
+ローカル・テスト・CI・本番の**すべてで PostgreSQL** を使います。
+
+## ローカル開発（ホストで実行 + DB はコンテナ）
+
+DB コンテナだけ起動し、アプリはホストの uv で動かす構成（ホットリロードが速い）。
 
 ```powershell
+docker compose up -d db                 # PostgreSQL を起動（初回のみ待ち時間あり）
 uv run python manage.py migrate
 uv run python manage.py runserver
+uv run pytest                           # テストも同じ PostgreSQL に接続
 ```
+
+- 接続先の既定は `localhost:5432`（`.env` の `DB_HOST`）。compose の `db` サービスがポートを公開しています。
+- **DB コンテナが起動していないとテスト・起動は失敗します**（意図的な仕様です）。
 
 パッケージ追加・削除:
 
