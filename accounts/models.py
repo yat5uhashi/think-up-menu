@@ -32,7 +32,14 @@ class UserManager(BaseUserManager):
             raise ValueError("email は必須です。")
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
+        # full_clean は password が空だと blank=False で落ちるので、先にハッシュ化する
         user.set_password(password)
+        # Django は save() 時にモデルの検証を行わないため、ここで明示的に呼ぶ。
+        # これはクライアント入力の検証ではなく「モデルの不変条件のアサーション」。
+        # View 層(シリアライザ)で検証済みが前提であり、ここで落ちるのはサーバー側の
+        # 不具合なので、ValidationError は握りつぶさず 500 として検知させる。
+        # 一意性は DB の unique 制約が保証する（事前 SELECT は TOCTOU で無意味なため省く）。
+        user.full_clean(validate_unique=False)
         user.save(using=self._db)
         return user
 
