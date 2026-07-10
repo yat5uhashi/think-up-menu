@@ -27,6 +27,8 @@ services:
     env_file:
       - .env
     environment:
+      # コンテナ内では DB はサービス名 db で解決する。
+      # environment は env_file より優先されるため、.env の DB_HOST=localhost を上書きする。
       DB_HOST: db
     depends_on:
       db:

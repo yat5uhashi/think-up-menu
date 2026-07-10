@@ -108,27 +108,22 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-# Uses PostgreSQL when DB_HOST is set (e.g. via Docker), otherwise SQLite for
-# quick local runs without a database server.
-if os.environ.get("DB_HOST"):
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("DB_NAME", "app"),
-            "USER": os.environ.get("DB_USER", "app"),
-            "PASSWORD": os.environ.get("DB_PASSWORD", "app"),
-            "HOST": os.environ.get("DB_HOST", "db"),
-            "PORT": os.environ.get("DB_PORT", "5432"),
-        }
+#
+# ローカル・テスト・CI・本番のすべてで PostgreSQL を使う（dev/prod parity）。
+# SQLite は varchar の最大長を検証しない等、挙動が PostgreSQL と異なり、
+# 「ローカルは通るのに本番で落ちる」バグを生むため使わない。
+# ローカルでは `docker compose up -d db` で DB を起動する（既定は localhost）。
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("DB_NAME", "app"),
+        "USER": os.environ.get("DB_USER", "app"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "app"),
+        # コンテナ内からは docker-compose が DB_HOST=db を注入して上書きする
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
 
 
 # Password validation

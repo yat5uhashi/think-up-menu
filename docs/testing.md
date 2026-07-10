@@ -11,15 +11,20 @@
 
 ## 実行
 
+テストは**本番と同じ PostgreSQL** に接続します（dev/prod parity）。事前に DB コンテナを起動してください。
+
 ```powershell
+docker compose up -d db       # 先に PostgreSQL を起動（未起動だとテストは失敗する）
+
 uv run pytest                 # 全テスト
-uv run pytest app/tests/test_auth.py   # ファイル指定
+uv run pytest accounts/tests/test_auth.py   # ファイル指定
 uv run pytest -k token        # 名前で絞り込み
 uv run pytest -q              # 簡潔表示
 ```
 
 - 2回目以降は `--reuse-db`（既定で有効）でテストDBを再利用して高速化。
 - モデルを変更してテストDBを作り直したいときは `uv run pytest --create-db`。
+- **SQLite は使いません**。SQLite は `varchar` の最大長を検証しない等 PostgreSQL と挙動が異なり、「ローカルは通るが CI で落ちる」原因になるためです。
 
 ## 置き場所と命名
 
