@@ -89,6 +89,49 @@ def test_register_weak_password_is_rejected(client):
     assert "password" in res.data["error"]["details"]
 
 
+# --- email の正規化（大文字小文字を同一視） -------------------------------
+
+
+@pytest.mark.django_db
+def test_register_normalizes_email_to_lowercase(client):
+    """大文字混じりで登録しても小文字に正規化して保存される。"""
+    res = client.post(
+        REGISTER_URL,
+        {"email": "Alice@Example.COM", "password": "pass12345", "display_name": "アリス"},
+        format="json",
+    )
+    assert res.status_code == 201
+    assert res.data["email"] == "alice@example.com"
+    assert User.objects.filter(email="alice@example.com").exists()
+
+
+@pytest.mark.django_db
+def test_register_duplicate_email_differing_case_is_rejected(client):
+    """大文字違いの同一アドレスは重複として弾く。"""
+    _create_user(email="dup@example.com")
+    res = client.post(
+        REGISTER_URL,
+        {"email": "DUP@Example.com", "password": "pass12345", "display_name": "x"},
+        format="json",
+    )
+    assert res.status_code == 400
+    assert res.data["error"]["code"] == "validation_error"
+    assert "email" in res.data["error"]["details"]
+
+
+@pytest.mark.django_db
+def test_login_is_case_insensitive(client):
+    """小文字で登録したアドレスに大文字混じりでもログインできる。"""
+    _create_user(email="alice@example.com")
+    res = client.post(
+        TOKEN_URL,
+        {"email": "Alice@Example.COM", "password": "pass12345"},
+        format="json",
+    )
+    assert res.status_code == 200
+    assert "access" in res.data
+
+
 # --- ログイン -------------------------------------------------------------
 
 

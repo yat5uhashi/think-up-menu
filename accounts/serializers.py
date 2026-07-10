@@ -30,6 +30,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ["email", "password", "display_name"]
 
+    def to_internal_value(self, data):
+        # email の一意性チェック（UniqueValidator）は各フィールドの検証時に走るため、
+        # その前に正規化しておかないと大文字違いの重複を取りこぼす。
+        email = data.get("email") if hasattr(data, "get") else None
+        if isinstance(email, str):
+            data = {**data, "email": User.objects.normalize_email(email)}
+        return super().to_internal_value(data)
+
     def validate(self, attrs):
         # email/display_name と類似のパスワードも弾けるよう、仮ユーザーで検証する
         candidate = User(email=attrs.get("email", ""), display_name=attrs.get("display_name", ""))

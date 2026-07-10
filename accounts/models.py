@@ -12,6 +12,21 @@ class UserManager(BaseUserManager):
 
     use_in_migrations = True
 
+    @classmethod
+    def normalize_email(cls, email: str) -> str:
+        """メールアドレスを小文字に正規化する。
+
+        Django 標準の ``normalize_email`` はドメイン部しか小文字化しないため、
+        ローカル部も含めて全体を小文字にする。RFC 5321 上ローカル部は大文字小文字を
+        区別しうるが、実運用のメールプロバイダは区別せず、区別すると同一受信箱に
+        対して重複アカウントが作れてしまうため同一視する。
+        """
+        return super().normalize_email(email).lower()
+
+    def get_by_natural_key(self, username: str):
+        """メールアドレスの大文字小文字を区別せずにユーザーを取得する（ログインで使用）。"""
+        return self.get(**{f"{self.model.USERNAME_FIELD}__iexact": username})
+
     def _create_user(self, email: str, password: str | None, **extra_fields):
         if not email:
             raise ValueError("email は必須です。")
