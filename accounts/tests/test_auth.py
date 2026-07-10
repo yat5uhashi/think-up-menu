@@ -1,13 +1,14 @@
 """ユーザー認証の受け入れ基準・エラー形式のテスト。
 
 仕様: docs/specs/user-auth.md
+共通ヘルパーは tests/common.py、共通 fixture は conftest.py を参照。
 """
 
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-User = get_user_model()
+from tests.common import TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PASSWORD
 
 REGISTER_URL = "/api/v1/auth/register/"
 TOKEN_URL = "/api/v1/auth/token/"
@@ -16,60 +17,48 @@ LOGOUT_URL = "/api/v1/auth/logout/"
 PASSWORD_CHANGE_URL = "/api/v1/auth/password/change/"
 ME_URL = "/api/v1/auth/me/"
 
-
-@pytest.fixture
-def client() -> APIClient:
-    return APIClient()
+NEW_PASSWORD = "new-password-456"
 
 
-def _create_user(email="alice@example.com", password="pass12345", display_name="アリス"):
-    return User.objects.create_user(email=email, password=password, display_name=display_name)
-
-
-def _login(client, email="alice@example.com", password="pass12345"):
-    res = client.post(TOKEN_URL, {"email": email, "password": password}, format="json")
-    return res
-
-
-def _auth(client, user):
-    client.force_authenticate(user=user)
-    return client
+def _login(client, email=TEST_EMAIL, password=TEST_PASSWORD):
+    """ログインAPIを呼びレスポンスを返す。"""
+    return client.post(TOKEN_URL, {"email": email, "password": password}, format="json")
 
 
 # --- 会員登録 -------------------------------------------------------------
 
 
 @pytest.mark.django_db
-def test_register_success_returns_user_without_tokens(client):
-    res = client.post(
+def test_register_success_returns_user_without_tokens(api_client):
+    res = api_client.post(
         REGISTER_URL,
-        {"email": "bob@example.com", "password": "pass12345", "display_name": "ボブ"},
+        {"email": "new-user@example.com", "password": TEST_PASSWORD, "display_name": "ボブ"},
         format="json",
     )
     assert res.status_code == 201
-    assert res.data == {"id": res.data["id"], "email": "bob@example.com", "display_name": "ボブ"}
-    assert "access" not in res.data and "refresh" not in res.data
-    assert User.objects.filter(email="bob@example.com").exists()
+    assert res.data["email"] == "new-user@example.com"
+    assert res.data["display_name"] == "ボブ"
+    assert set(res.data) == {"id", "email", "display_name"}  # トークンは含まれない
+    assert get_user_model().objects.filter(email="new-user@example.com").exists()
 
 
 @pytest.mark.django_db
-def test_register_then_login(client):
-    client.post(
+def test_register_then_login(api_client):
+    api_client.post(
         REGISTER_URL,
-        {"email": "bob@example.com", "password": "pass12345", "display_name": "ボブ"},
+        {"email": "new-user@example.com", "password": TEST_PASSWORD, "display_name": "ボブ"},
         format="json",
     )
-    res = _login(client, "bob@example.com", "pass12345")
+    res = _login(api_client, "new-user@example.com", TEST_PASSWORD)
     assert res.status_code == 200
     assert "access" in res.data and "refresh" in res.data
 
 
 @pytest.mark.django_db
-def test_register_duplicate_email_is_validation_error(client):
-    _create_user(email="dup@example.com")
-    res = client.post(
+def test_register_duplicate_email_is_validation_error(api_client, user):
+    res = api_client.post(
         REGISTER_URL,
-        {"email": "dup@example.com", "password": "pass12345", "display_name": "x"},
+        {"email": TEST_EMAIL, "password": TEST_PASSWORD, "display_name": "x"},
         format="json",
     )
     assert res.status_code == 400
@@ -78,8 +67,8 @@ def test_register_duplicate_email_is_validation_error(client):
 
 
 @pytest.mark.django_db
-def test_register_weak_password_is_rejected(client):
-    res = client.post(
+def test_register_weak_password_is_rejected(api_client):
+    res = api_client.post(
         REGISTER_URL,
         {"email": "weak@example.com", "password": "123", "display_name": "x"},
         format="json",
@@ -93,25 +82,28 @@ def test_register_weak_password_is_rejected(client):
 
 
 @pytest.mark.django_db
-def test_register_normalizes_email_to_lowercase(client):
+def test_register_normalizes_email_to_lowercase(api_client):
     """大文字混じりで登録しても小文字に正規化して保存される。"""
-    res = client.post(
+    res = api_client.post(
         REGISTER_URL,
-        {"email": "Alice@Example.COM", "password": "pass12345", "display_name": "アリス"},
+        {
+            "email": "Alice@Example.COM",
+            "password": TEST_PASSWORD,
+            "display_name": TEST_DISPLAY_NAME,
+        },
         format="json",
     )
     assert res.status_code == 201
     assert res.data["email"] == "alice@example.com"
-    assert User.objects.filter(email="alice@example.com").exists()
+    assert get_user_model().objects.filter(email="alice@example.com").exists()
 
 
 @pytest.mark.django_db
-def test_register_duplicate_email_differing_case_is_rejected(client):
+def test_register_duplicate_email_differing_case_is_rejected(api_client, user):
     """大文字違いの同一アドレスは重複として弾く。"""
-    _create_user(email="dup@example.com")
-    res = client.post(
+    res = api_client.post(
         REGISTER_URL,
-        {"email": "DUP@Example.com", "password": "pass12345", "display_name": "x"},
+        {"email": TEST_EMAIL.upper(), "password": TEST_PASSWORD, "display_name": "x"},
         format="json",
     )
     assert res.status_code == 400
@@ -120,14 +112,9 @@ def test_register_duplicate_email_differing_case_is_rejected(client):
 
 
 @pytest.mark.django_db
-def test_login_is_case_insensitive(client):
+def test_login_is_case_insensitive(api_client, user):
     """小文字で登録したアドレスに大文字混じりでもログインできる。"""
-    _create_user(email="alice@example.com")
-    res = client.post(
-        TOKEN_URL,
-        {"email": "Alice@Example.COM", "password": "pass12345"},
-        format="json",
-    )
+    res = _login(api_client, email=TEST_EMAIL.upper())
     assert res.status_code == 200
     assert "access" in res.data
 
@@ -136,17 +123,15 @@ def test_login_is_case_insensitive(client):
 
 
 @pytest.mark.django_db
-def test_login_success(client):
-    _create_user()
-    res = _login(client)
+def test_login_success(api_client, user):
+    res = _login(api_client)
     assert res.status_code == 200
     assert "access" in res.data and "refresh" in res.data
 
 
 @pytest.mark.django_db
-def test_login_invalid_credentials(client):
-    _create_user()
-    res = _login(client, password="wrongpass")
+def test_login_invalid_credentials(api_client, user):
+    res = _login(api_client, password="wrong-password")
     assert res.status_code == 401
     assert res.data["error"]["code"] == "no_active_account"
 
@@ -155,61 +140,52 @@ def test_login_invalid_credentials(client):
 
 
 @pytest.mark.django_db
-def test_me_requires_authentication(client):
-    res = client.get(ME_URL)
+def test_me_requires_authentication(api_client):
+    res = api_client.get(ME_URL)
     assert res.status_code == 401
     assert res.data["error"]["code"] == "not_authenticated"
 
 
 @pytest.mark.django_db
-def test_me_get_and_update(client):
-    user = _create_user()
-    _auth(client, user)
-
-    res = client.get(ME_URL)
+def test_me_get_and_update(auth_client):
+    res = auth_client.get(ME_URL)
     assert res.status_code == 200
-    assert res.data["email"] == "alice@example.com"
+    assert res.data["email"] == TEST_EMAIL
 
-    res = client.patch(ME_URL, {"display_name": "アリスちゃん"}, format="json")
+    res = auth_client.patch(ME_URL, {"display_name": "更新後の名前"}, format="json")
     assert res.status_code == 200
-    assert res.data["display_name"] == "アリスちゃん"
+    assert res.data["display_name"] == "更新後の名前"
 
 
 @pytest.mark.django_db
-def test_me_email_is_read_only(client):
-    user = _create_user()
-    _auth(client, user)
-    res = client.patch(ME_URL, {"email": "hacker@example.com"}, format="json")
+def test_me_email_is_read_only(auth_client):
+    res = auth_client.patch(ME_URL, {"email": "hacker@example.com"}, format="json")
     assert res.status_code == 200
-    assert res.data["email"] == "alice@example.com"  # 変更されない
+    assert res.data["email"] == TEST_EMAIL  # 変更されない
 
 
 # --- パスワード変更 -------------------------------------------------------
 
 
 @pytest.mark.django_db
-def test_password_change_success(client):
-    user = _create_user()
-    _auth(client, user)
-    res = client.post(
+def test_password_change_success(auth_client):
+    res = auth_client.post(
         PASSWORD_CHANGE_URL,
-        {"current_password": "pass12345", "new_password": "newpass6789"},
+        {"current_password": TEST_PASSWORD, "new_password": NEW_PASSWORD},
         format="json",
     )
     assert res.status_code == 200
 
     fresh = APIClient()
-    assert _login(fresh, password="pass12345").status_code == 401  # 旧PWは不可
-    assert _login(fresh, password="newpass6789").status_code == 200  # 新PWで可
+    assert _login(fresh, password=TEST_PASSWORD).status_code == 401  # 旧PWは不可
+    assert _login(fresh, password=NEW_PASSWORD).status_code == 200  # 新PWで可
 
 
 @pytest.mark.django_db
-def test_password_change_wrong_current(client):
-    user = _create_user()
-    _auth(client, user)
-    res = client.post(
+def test_password_change_wrong_current(auth_client):
+    res = auth_client.post(
         PASSWORD_CHANGE_URL,
-        {"current_password": "wrong", "new_password": "newpass6789"},
+        {"current_password": "wrong-password", "new_password": NEW_PASSWORD},
         format="json",
     )
     assert res.status_code == 400
@@ -221,17 +197,16 @@ def test_password_change_wrong_current(client):
 
 
 @pytest.mark.django_db
-def test_logout_blacklists_refresh_token(client):
-    _create_user()
-    tokens = _login(client).data
-    auth = APIClient()
-    auth.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
+def test_logout_blacklists_refresh_token(api_client, user):
+    tokens = _login(api_client).data
+    authed = APIClient()
+    authed.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
 
-    res = auth.post(LOGOUT_URL, {"refresh": tokens["refresh"]}, format="json")
+    res = authed.post(LOGOUT_URL, {"refresh": tokens["refresh"]}, format="json")
     assert res.status_code == 205
 
     # 無効化された refresh では再発行できない
-    res = client.post(REFRESH_URL, {"refresh": tokens["refresh"]}, format="json")
+    res = api_client.post(REFRESH_URL, {"refresh": tokens["refresh"]}, format="json")
     assert res.status_code == 401
     assert res.data["error"]["code"] == "token_not_valid"
 
@@ -240,8 +215,8 @@ def test_logout_blacklists_refresh_token(client):
 
 
 @pytest.mark.django_db
-def test_unknown_api_version_is_rejected(client):
-    res = client.post(
+def test_unknown_api_version_is_rejected(api_client):
+    res = api_client.post(
         "/api/v2/auth/token/",
         {"email": "x@example.com", "password": "y"},
         format="json",

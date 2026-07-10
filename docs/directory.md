@@ -26,6 +26,10 @@ think-up-menu/
 │   ├── migrations/              # マイグレーション（コミット対象）
 │   └── tests/                   # テスト
 │
+├── tests/                   # アプリ横断のテスト共通ヘルパー
+│   └── common.py                # create_user 等のテストデータ生成
+├── conftest.py              # pytest 共通 fixture（api_client / user / auth_client）
+│
 ├── docs/                    # 設計・規約ドキュメント
 │   ├── architecture.md          # 設計方針（レイヤー）
 │   ├── coding-style.md          # コーディング規約
@@ -49,6 +53,7 @@ think-up-menu/
 | プロジェクト全体の設定・ルーティング | `config/` |
 | 複数アプリで共有する例外・ユーティリティ・基底クラス | `core/` |
 | 機能ごとのモデル・API・ロジック | `app/`（将来は機能別アプリに分割） |
+| アプリ横断のテストヘルパー・共通 fixture | `tests/common.py` / `conftest.py` |
 | 設計・規約のドキュメント | `docs/` |
 
 ## アプリの分割方針

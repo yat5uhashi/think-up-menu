@@ -24,7 +24,12 @@ uv run pytest -q              # 簡潔表示
 ## 置き場所と命名
 
 ```
-app/tests/
+conftest.py             # 共通 fixture（全テストから import 不要で使える）
+tests/
+├── __init__.py
+└── common.py           # 共通ヘルパー（create_user 等のテストデータ生成）
+
+<app>/tests/
 ├── __init__.py
 ├── test_services.py    # サービス層
 ├── test_selectors.py   # セレクタ層
@@ -33,6 +38,36 @@ app/tests/
 
 - ファイル名は `test_*.py`、関数名は `test_*`。
 - DB を使うテストには `@pytest.mark.django_db` を付ける。
+
+### 共通ヘルパー（tests/common.py）
+
+アプリ横断で使うテストデータ生成はここに置く。既定値は**テストと分かる値**にし、必要な項目だけ上書きする。
+
+```python
+from tests.common import TEST_EMAIL, TEST_PASSWORD, create_user
+
+user = create_user()                             # 既定のテストユーザー
+other = create_user(email="other@example.com")   # 一部だけ上書き
+admin = create_superuser()                       # 管理者
+```
+
+### 共通 fixture（conftest.py）
+
+プロジェクト直下の `conftest.py` に置いた fixture は、**import なしで全テストから使える**。
+
+| fixture | 内容 |
+|---|---|
+| `api_client` | 未認証の `APIClient` |
+| `user` | 既定のテストユーザー（DB作成） |
+| `auth_client` | `user` で認証済みの `APIClient` |
+
+```python
+def test_me(auth_client):
+    res = auth_client.get("/api/v1/auth/me/")
+    assert res.status_code == 200
+```
+
+- **新しく共有したくなったヘルパーは `tests/common.py`、fixture は `conftest.py`** に足す。テストファイルに直書きして重複させない。
 
 ## 書き方の指針
 
