@@ -6,11 +6,24 @@
 - 許可バージョンは [settings.py](../config/settings.py) の `ALLOWED_VERSIONS` で管理。範囲外（例 `/api/v2/`）は 404。
 - 破壊的変更が必要になったら `v2` を**並行提供**し、`v1` は段階的に廃止する。
 
+## リソースの分類（どこに置くか）
+
+エンドポイントは役割で3つに分ける。**「認証アクション」と「ドメイン資源」を混ぜない**。
+
+| 分類 | パス | 内容 | 例 |
+|---|---|---|---|
+| 認証アクション | `/api/v1/auth/...` | ログイン・トークン・登録・パスワード等 | `auth/token/`, `auth/register/`, `auth/logout/` |
+| 自分のアカウント | `/api/v1/auth/me/` | ログイン中ユーザー自身の情報（identity） | GET/PATCH |
+| ドメイン資源 | `/api/v1/<resource>/` | アプリのデータ。独立したトップレベル資源 | `ingredients/`, `menus/`, `favorites/` |
+
+- **ドメイン資源は `auth` の下に置かない**。「ログイン中ユーザーに紐づく」ことは `auth` 配下にする理由にならない。
+- **ユーザーへの紐付けは URL ではなく `request.user` で行う**（`/users/{id}/favorites/` のように他人の id を URL に晒さない）。これが「自分の資源だけ返す」＝水平権限昇格の防止になる。
+
 ## URL 設計
 
-- **リソースは複数形の名詞**：`/api/v1/recipes/`、`/api/v1/menus/`。
-- 階層は浅く保つ。ネストは1段まで：`/api/v1/menus/{id}/items/`。
-- 動詞は URL に入れない（操作は HTTP メソッドで表現）。やむを得ないアクションは末尾に：`/api/v1/menus/{id}/suggest/`。
+- **リソースは複数形の名詞**：`/api/v1/ingredients/`、`/api/v1/menus/`。
+- 階層は浅く保つ。ネストは1段まで：`/api/v1/menus/{id}/ingredients/`。
+- 動詞は URL に入れない（操作は HTTP メソッドで表現）。やむを得ないアクションは末尾に：`/api/v1/menus/{id}/favorite/`。
 - 末尾スラッシュあり（Django のデフォルト）。
 
 | 操作 | メソッド | URL | 成功ステータス |
