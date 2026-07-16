@@ -41,6 +41,8 @@ urlpatterns = [
         TokenVerifyView.as_view(),
         name="token_verify",
     ),
+    # 認証（register / logout / password/change / me）
+    path("api/<version>/auth/", include("accounts.urls")),
     # 機能 API（/api/v1/...）
     path("api/<version>/", include("app.urls")),
 ]

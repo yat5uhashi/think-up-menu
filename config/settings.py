@@ -43,10 +43,15 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # サードパーティ
     "rest_framework",
+    "rest_framework_simplejwt.token_blacklist",
     # 自作アプリ
     "core",
+    "accounts",
     "app",
 ]
+
+# email を識別子とするカスタムユーザーモデル
+AUTH_USER_MODEL = "accounts.User"
 
 # Django REST Framework
 # https://www.django-rest-framework.org/api-guide/settings/
